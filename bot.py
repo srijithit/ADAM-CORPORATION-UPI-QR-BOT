@@ -5,13 +5,47 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from config import DISCORD_BOT_TOKEN, UPI_ID, PAYEE_NAME, COMMAND_PREFIX
+from config import (
+    DISCORD_BOT_TOKEN,
+    UPI_ID,
+    PAYEE_NAME,
+    COMMAND_PREFIX,
+    AUTHORIZED_ROLE,
+    AUTHORIZED_USERS,
+)
 from qr_generator import generate_upi_qr
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)
+
+def is_authorized(user: typing.Union[discord.User, discord.Member], guild: typing.Optional[discord.Guild]) -> bool:
+    """Check if the user is authorized to use the payment bot."""
+    if not guild:
+        # If run in DMs, check if user ID is explicitly in AUTHORIZED_USERS
+        return str(user.id) in AUTHORIZED_USERS or not AUTHORIZED_USERS
+
+    # 1. Server Owner is always authorized
+    if guild.owner_id == user.id:
+        return True
+
+    # 2. Server Administrators or members with Manage Server permission
+    perms = getattr(user, 'guild_permissions', None)
+    if perms and (perms.administrator or perms.manage_guild):
+        return True
+
+    # 3. Explicit User ID whitelist in .env
+    if str(user.id) in AUTHORIZED_USERS:
+        return True
+
+    # 4. Check if member has the authorized role (by name or ID)
+    roles = getattr(user, 'roles', [])
+    for role in roles:
+        if role.name.lower() == AUTHORIZED_ROLE.lower() or str(role.id) == AUTHORIZED_ROLE:
+            return True
+
+    return False
 
 def create_payment_response(amount: float, note: str = 'Payment'):
     qr_buf, _ = generate_upi_qr(amount, note)
@@ -20,7 +54,7 @@ def create_payment_response(amount: float, note: str = 'Payment'):
     embed = discord.Embed(
         title='Payment QR',
         description=f'Amount should be paid - **₹{amount:,.2f}**',
-        color=0xFEE75C,  # Gold/amber accent matching reference
+        color=0xFEE75C,  # Gold/amber accent
         timestamp=discord.utils.utcnow()
     )
     if note and note != 'Payment':
@@ -47,6 +81,13 @@ class QRModal(discord.ui.Modal, title='Generate Payment QR'):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
+        if not is_authorized(interaction.user, interaction.guild):
+            await interaction.response.send_message(
+                '🚫 **Access Denied**: You do not have permission to generate payment QR codes in this server.',
+                ephemeral=True
+            )
+            return
+
         clean_amount = self.amount_input.value.strip().replace('₹', '').replace(',', '')
         try:
             amount = float(clean_amount)
@@ -72,8 +113,14 @@ async def handle_qr_command(
     amount: typing.Optional[float] = None,
     note: str = 'Payment'
 ):
+    if not is_authorized(interaction.user, interaction.guild):
+        await interaction.response.send_message(
+            '🚫 **Access Denied**: You do not have permission to generate payment QR codes in this server.',
+            ephemeral=True
+        )
+        return
+
     if amount is None:
-        # Opens an interactive pop-up form in Discord
         await interaction.response.send_modal(QRModal())
     else:
         if amount <= 0:
@@ -91,6 +138,8 @@ async def on_ready():
     print(f'Logged in as: {bot.user.name} (ID: {bot.user.id})', flush=True)
     print(f'Payee UPI ID: {UPI_ID}', flush=True)
     print(f'Payee Name  : {PAYEE_NAME}', flush=True)
+    print(f'Auth Role   : {AUTHORIZED_ROLE}', flush=True)
+    print(f'Auth Users  : {AUTHORIZED_USERS if AUTHORIZED_USERS else "Admin/Owner only by default"}', flush=True)
     try:
         synced = await bot.tree.sync()
         print(f'Synced {len(synced)} slash command(s).', flush=True)
@@ -100,6 +149,7 @@ async def on_ready():
     print('=' * 50, flush=True)
 
 @bot.tree.command(name='qr', description='Generate a UPI payment QR code')
+@app_commands.default_permissions(administrator=True)
 @app_commands.describe(
     amount='Amount in INR (leave empty to open prompt modal)',
     note='Optional payment note or reason'
@@ -112,6 +162,7 @@ async def slash_qr(
     await handle_qr_command(interaction, amount=amount, note=note)
 
 @bot.tree.command(name='pay', description='Generate a UPI payment QR code')
+@app_commands.default_permissions(administrator=True)
 @app_commands.describe(
     amount='Amount in INR (leave empty to open prompt modal)',
     note='Optional payment note or reason'
@@ -125,6 +176,10 @@ async def slash_pay(
 
 @bot.command(name='qr', aliases=['pay'])
 async def prefix_qr(ctx: commands.Context, amount: float, *, note: str = 'Payment'):
+    if not is_authorized(ctx.author, ctx.guild):
+        await ctx.reply('🚫 **Access Denied**: You do not have permission to generate payment QR codes in this server.')
+        return
+
     if amount <= 0:
         await ctx.reply('❌ Amount must be greater than zero.')
         return
