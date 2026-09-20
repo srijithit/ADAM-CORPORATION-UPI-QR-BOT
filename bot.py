@@ -23,7 +23,6 @@ bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)
 def is_authorized(user: typing.Union[discord.User, discord.Member], guild: typing.Optional[discord.Guild]) -> bool:
     """Check if the user is authorized to use the payment bot."""
     if not guild:
-        # If run in DMs, check if user ID is explicitly in AUTHORIZED_USERS
         return str(user.id) in AUTHORIZED_USERS or not AUTHORIZED_USERS
 
     # 1. Server Owner is always authorized
@@ -63,54 +62,9 @@ def create_payment_response(amount: float, note: str = 'Payment'):
     embed.set_image(url='attachment://payment_qr.png')
     return embed, file
 
-class QRModal(discord.ui.Modal, title='Generate Payment QR'):
-    """Modal popup dialog when a user runs /qr without specifying an amount."""
-    amount_input = discord.ui.TextInput(
-        label='Enter Amount (in ₹ INR)',
-        placeholder='e.g. 500 or 3500.00',
-        required=True,
-        min_length=1,
-        max_length=12
-    )
-    note_input = discord.ui.TextInput(
-        label='Payment Note / Reason (Optional)',
-        placeholder='Payment',
-        default='Payment',
-        required=False,
-        max_length=50
-    )
-
-    async def on_submit(self, interaction: discord.Interaction):
-        if not is_authorized(interaction.user, interaction.guild):
-            await interaction.response.send_message(
-                '🚫 **Access Denied**: You do not have permission to generate payment QR codes in this server.',
-                ephemeral=True
-            )
-            return
-
-        clean_amount = self.amount_input.value.strip().replace('₹', '').replace(',', '')
-        try:
-            amount = float(clean_amount)
-            if amount <= 0:
-                await interaction.response.send_message(
-                    '❌ Amount must be greater than 0.',
-                    ephemeral=True
-                )
-                return
-        except ValueError:
-            await interaction.response.send_message(
-                '❌ Invalid amount. Please enter a valid number (e.g. 500 or 3500).',
-                ephemeral=True
-            )
-            return
-
-        note = self.note_input.value.strip() or 'Payment'
-        embed, file = create_payment_response(amount, note)
-        await interaction.response.send_message(embed=embed, file=file)
-
 async def handle_qr_command(
     interaction: discord.Interaction,
-    amount: typing.Optional[float] = None,
+    amount: float,
     note: str = 'Payment'
 ):
     if not is_authorized(interaction.user, interaction.guild):
@@ -120,17 +74,15 @@ async def handle_qr_command(
         )
         return
 
-    if amount is None:
-        await interaction.response.send_modal(QRModal())
-    else:
-        if amount <= 0:
-            await interaction.response.send_message(
-                '❌ Amount must be greater than zero.',
-                ephemeral=True
-            )
-            return
-        embed, file = create_payment_response(amount, note)
-        await interaction.response.send_message(embed=embed, file=file)
+    if amount <= 0:
+        await interaction.response.send_message(
+            '❌ Amount must be greater than zero.',
+            ephemeral=True
+        )
+        return
+
+    embed, file = create_payment_response(amount, note)
+    await interaction.response.send_message(embed=embed, file=file)
 
 @bot.event
 async def on_ready():
@@ -151,12 +103,12 @@ async def on_ready():
 @bot.tree.command(name='qr', description='Generate a UPI payment QR code')
 @app_commands.default_permissions(administrator=True)
 @app_commands.describe(
-    amount='Amount in INR (leave empty to open prompt modal)',
+    amount='Enter the amount to pay in INR (e.g. 500 or 3500)',
     note='Optional payment note or reason'
 )
 async def slash_qr(
     interaction: discord.Interaction,
-    amount: typing.Optional[float] = None,
+    amount: float,
     note: str = 'Payment'
 ):
     await handle_qr_command(interaction, amount=amount, note=note)
@@ -164,12 +116,12 @@ async def slash_qr(
 @bot.tree.command(name='pay', description='Generate a UPI payment QR code')
 @app_commands.default_permissions(administrator=True)
 @app_commands.describe(
-    amount='Amount in INR (leave empty to open prompt modal)',
+    amount='Enter the amount to pay in INR (e.g. 500 or 3500)',
     note='Optional payment note or reason'
 )
 async def slash_pay(
     interaction: discord.Interaction,
-    amount: typing.Optional[float] = None,
+    amount: float,
     note: str = 'Payment'
 ):
     await handle_qr_command(interaction, amount=amount, note=note)
