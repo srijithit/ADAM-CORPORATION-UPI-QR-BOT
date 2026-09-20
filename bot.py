@@ -97,7 +97,7 @@ async def on_ready():
         print(f'Synced {len(synced)} slash command(s).', flush=True)
     except Exception as e:
         print(f'Failed to sync slash commands: {e}', flush=True)
-    print('Bot is ready to accept commands (/qr, /pay, !qr, !pay)!', flush=True)
+    print('Bot is ready to accept /qr commands!', flush=True)
     print('=' * 50, flush=True)
 
 @bot.tree.command(name='qr', description='Generate a UPI payment QR code')
@@ -113,20 +113,7 @@ async def slash_qr(
 ):
     await handle_qr_command(interaction, amount=amount, note=note)
 
-@bot.tree.command(name='pay', description='Generate a UPI payment QR code')
-@app_commands.default_permissions(administrator=True)
-@app_commands.describe(
-    amount='Enter the amount to pay in INR (e.g. 500 or 3500)',
-    note='Optional payment note or reason'
-)
-async def slash_pay(
-    interaction: discord.Interaction,
-    amount: float,
-    note: str = 'Payment'
-):
-    await handle_qr_command(interaction, amount=amount, note=note)
-
-@bot.command(name='qr', aliases=['pay'])
+@bot.command(name='qr')
 async def prefix_qr(ctx: commands.Context, amount: float, *, note: str = 'Payment'):
     if not is_authorized(ctx.author, ctx.guild):
         await ctx.reply('🚫 **Access Denied**: You do not have permission to generate payment QR codes in this server.')
