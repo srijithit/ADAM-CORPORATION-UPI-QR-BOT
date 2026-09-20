@@ -10,12 +10,12 @@ app = FastAPI(title="UPI Payment QR Generator", version="1.0.0")
 
 TEMPLATE_PATH = pathlib.Path(__file__).parent / "templates" / "index.html"
 
-@app.get("/", response_class=HTMLResponse)
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def index():
     html = TEMPLATE_PATH.read_text(encoding="utf-8")
     return HTMLResponse(content=html)
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD", "POST"])
 def health_check():
     return JSONResponse({
         "status": "ok",
