@@ -1,12 +1,18 @@
 import os
 import pathlib
 import uvicorn
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Response
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
 from config import UPI_ID, PAYEE_NAME, CURRENCY
 from qr_generator import generate_upi_qr, create_upi_url
 
 app = FastAPI(title="UPI Payment QR Generator", version="1.0.0")
+
+@app.middleware("http")
+async def handle_head_requests(request, call_next):
+    if request.method == "HEAD":
+        return Response(status_code=200)
+    return await call_next(request)
 
 TEMPLATE_PATH = pathlib.Path(__file__).parent / "templates" / "index.html"
 
