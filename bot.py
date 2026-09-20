@@ -13,48 +13,21 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)
 
-class PaymentActionView(discord.ui.View):
-    """Interactive Discord buttons for copy actions (Discord disallows non-http link schemes)."""
-    def __init__(self, upi_url: str, upi_id: str, amount: float):
-        super().__init__(timeout=None)
-        self.upi_url = upi_url
-        self.upi_id = upi_id
-        self.amount = amount
-
-    @discord.ui.button(label='Copy UPI ID', style=discord.ButtonStyle.secondary, emoji='📋')
-    async def copy_upi(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(
-            f'**Payee:** {PAYEE_NAME}\n**UPI ID:** `{self.upi_id}`\n**Amount:** `₹{self.amount:,.2f}`\n\n*(Copy and paste into GPay, PhonePe, Paytm, etc.)*',
-            ephemeral=True
-        )
-
-    @discord.ui.button(label='UPI Pay Link', style=discord.ButtonStyle.primary, emoji='📱')
-    async def copy_link(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(
-            f'**UPI Payment Deep Link:**\n```{self.upi_url}```\n*(Copy this URI to trigger payment directly on mobile devices)*',
-            ephemeral=True
-        )
-
 def create_payment_response(amount: float, note: str = 'Payment'):
-    qr_buf, upi_url = generate_upi_qr(amount, note)
+    qr_buf, _ = generate_upi_qr(amount, note)
     file = discord.File(fp=qr_buf, filename='payment_qr.png')
 
     embed = discord.Embed(
-        title='💳 Payment QR',
-        description=f'Amount should be paid - **₹{amount:,.2f}**\n\nScan this QR code using **Google Pay**, **PhonePe**, **Paytm**, or any UPI app.',
+        title='Payment QR',
+        description=f'Amount should be paid - **₹{amount:,.2f}**',
         color=0xFEE75C,  # Gold/amber accent matching reference
         timestamp=discord.utils.utcnow()
     )
-    embed.add_field(name='Payee', value=PAYEE_NAME, inline=True)
-    embed.add_field(name='UPI ID', value=f'`{UPI_ID}`', inline=True)
     if note and note != 'Payment':
         embed.add_field(name='Note', value=note, inline=False)
 
     embed.set_image(url='attachment://payment_qr.png')
-    embed.set_footer(text='Secure UPI Payment | Click buttons below for details')
-
-    view = PaymentActionView(upi_url=upi_url, upi_id=UPI_ID, amount=amount)
-    return embed, file, view
+    return embed, file
 
 class QRModal(discord.ui.Modal, title='Generate Payment QR'):
     """Modal popup dialog when a user runs /qr without specifying an amount."""
@@ -91,8 +64,8 @@ class QRModal(discord.ui.Modal, title='Generate Payment QR'):
             return
 
         note = self.note_input.value.strip() or 'Payment'
-        embed, file, view = create_payment_response(amount, note)
-        await interaction.response.send_message(embed=embed, file=file, view=view)
+        embed, file = create_payment_response(amount, note)
+        await interaction.response.send_message(embed=embed, file=file)
 
 async def handle_qr_command(
     interaction: discord.Interaction,
@@ -109,8 +82,8 @@ async def handle_qr_command(
                 ephemeral=True
             )
             return
-        embed, file, view = create_payment_response(amount, note)
-        await interaction.response.send_message(embed=embed, file=file, view=view)
+        embed, file = create_payment_response(amount, note)
+        await interaction.response.send_message(embed=embed, file=file)
 
 @bot.event
 async def on_ready():
@@ -156,8 +129,8 @@ async def prefix_qr(ctx: commands.Context, amount: float, *, note: str = 'Paymen
         await ctx.reply('❌ Amount must be greater than zero.')
         return
 
-    embed, file, view = create_payment_response(amount, note)
-    await ctx.reply(embed=embed, file=file, view=view)
+    embed, file = create_payment_response(amount, note)
+    await ctx.reply(embed=embed, file=file)
 
 @prefix_qr.error
 async def prefix_qr_error(ctx: commands.Context, error):
