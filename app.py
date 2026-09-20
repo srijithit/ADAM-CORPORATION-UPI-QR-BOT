@@ -1,4 +1,4 @@
-﻿import os
+import os
 import pathlib
 import uvicorn
 from fastapi import FastAPI, Query
@@ -13,8 +13,15 @@ TEMPLATE_PATH = pathlib.Path(__file__).parent / "templates" / "index.html"
 @app.get("/", response_class=HTMLResponse)
 def index():
     html = TEMPLATE_PATH.read_text(encoding="utf-8")
-    html = html.replace("{{ upi_id }}", UPI_ID).replace("{{ payee_name }}", PAYEE_NAME)
     return HTMLResponse(content=html)
+
+@app.get("/health")
+def health_check():
+    return JSONResponse({
+        "status": "ok",
+        "service": "ADAM CORPORATION Backend Engine",
+        "state": "running"
+    })
 
 @app.get("/api/qr")
 def get_qr_image(

@@ -1,465 +1,122 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UPI Payment QR Generator</title>
+    <title>ADAM CORPORATION | Backend Engine</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #121316;
-            color: #f2f3f5;
+            background: radial-gradient(circle at center, #16181d 0%, #0d0e12 100%);
+            color: #f3f4f6;
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            padding: 40px 20px;
+            justify-content: center;
+            padding: 24px;
         }
-        .container {
+        .status-card {
+            background: rgba(26, 28, 35, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 48px 40px;
+            max-width: 480px;
             width: 100%;
-            max-width: 920px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             display: flex;
             flex-direction: column;
-            gap: 28px;
+            align-items: center;
+            gap: 20px;
         }
-        header { text-align: center; }
-        .header-title {
-            font-size: 2.2rem;
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.6rem;
+            color: #ffffff;
+            letter-spacing: -1px;
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
+        }
+        .title {
+            font-size: 1.8rem;
             font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #ffffff 0%, #d1d5db 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+            text-transform: uppercase;
         }
-        .header-sub {
-            color: #949ba4;
-            font-size: 0.95rem;
-            margin-bottom: 14px;
+        .subtitle {
+            font-size: 1.15rem;
+            color: #9ca3af;
+            font-weight: 500;
         }
-        .upi-badge {
+        .status-pill {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            background-color: #232428;
-            border: 1px solid #383a40;
-            padding: 7px 16px;
-            border-radius: 9999px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.95rem;
-            color: #fbbf24;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .upi-badge:hover {
-            background-color: #2b2d31;
-            border-color: #fbbf24;
-        }
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1.1fr 1fr;
-            gap: 28px;
-            align-items: start;
-        }
-        @media (max-width: 768px) {
-            .grid-layout { grid-template-columns: 1fr; }
-        }
-        .controls-card {
-            background-color: #1e1f24;
-            border: 1px solid #383a40;
-            border-radius: 16px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-        }
-        .form-group { display: flex; flex-direction: column; gap: 8px; }
-        label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #949ba4;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .currency-symbol {
-            position: absolute;
-            left: 16px;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #949ba4;
-            pointer-events: none;
-        }
-        .styled-input {
-            width: 100%;
-            background-color: #111214;
-            border: 1px solid #383a40;
-            border-radius: 10px;
-            padding: 12px 14px 12px 38px;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #ffffff;
-            outline: none;
-            transition: border-color 0.2s;
-            font-family: inherit;
-        }
-        .styled-input:focus {
-            border-color: #f59e0b;
-            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-        }
-        .note-input {
-            padding-left: 14px;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-        .presets {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-        .preset-btn {
-            background-color: #2b2d31;
-            border: 1px solid #383a40;
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #f2f3f5;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .preset-btn:hover {
-            background-color: #35373c;
-            border-color: #4e5058;
-        }
-        .preset-btn.active {
-            background-color: rgba(245, 158, 11, 0.15);
-            border-color: #f59e0b;
-            color: #fbbf24;
-        }
-        .btn-generate {
-            background-color: #f59e0b;
-            color: #000000;
-            border: none;
-            border-radius: 10px;
-            padding: 14px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .btn-generate:hover {
-            background-color: #d97706;
-            transform: translateY(-1px);
-        }
-        .preview-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .preview-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #949ba4;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        /* Card styled identically to the user reference image */
-        .discord-embed-card {
-            background-color: #2b2d31;
-            border-radius: 6px;
-            border-left: 4px solid #f59e0b;
-            padding: 18px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
-            max-width: 440px;
-            margin: 0 auto;
-            width: 100%;
-        }
-        .embed-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: #ffffff;
-        }
-        .embed-subtitle {
-            font-size: 1rem;
-            color: #dbdee1;
-            font-weight: 500;
-        }
-        .embed-subtitle strong {
-            font-weight: 700;
-            color: #ffffff;
-        }
-        .qr-card-container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-        .qr-card-container img {
-            width: 100%;
-            height: auto;
-            display: block;
-            border-radius: 4px;
-        }
-        .embed-timestamp {
-            font-size: 0.75rem;
-            color: #949ba4;
-            font-weight: 500;
-        }
-        .actions-card {
-            display: flex;
-            flex-direction: column;
             gap: 10px;
-            max-width: 440px;
-            width: 100%;
-            margin: 0 auto;
-        }
-        .btn-action {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 11px 16px;
-            border-radius: 8px;
-            font-size: 0.95rem;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            padding: 8px 18px;
+            border-radius: 9999px;
+            color: #22c55e;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
             font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid #383a40;
+            letter-spacing: 0.5px;
         }
-        .btn-upi-pay {
-            background-color: #22c55e;
-            color: #ffffff;
-            border-color: #16a34a;
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            animation: pulse 2s infinite;
         }
-        .btn-upi-pay:hover { background-color: #16a34a; }
-        .btn-secondary {
-            background-color: #2b2d31;
-            color: #f2f3f5;
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+            }
         }
-        .btn-secondary:hover {
-            background-color: #35373c;
-            border-color: #4e5058;
-        }
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background-color: #10b981;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.25s ease;
-            pointer-events: none;
-            z-index: 100;
-        }
-        .toast.show {
-            opacity: 1;
-            transform: translateY(0);
+        .footer-text {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 8px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1 class="header-title">UPI Payment Generator</h1>
-            <p class="header-sub">Generate instant dynamic payment QR codes with pre-filled amount</p>
-            <div class="upi-badge" onclick="copyText('{{ upi_id }}', 'UPI ID copied to clipboard!')" title="Click to copy">
-                <span>⚡ Payee:</span>
-                <strong>{{ payee_name }} ({{ upi_id }})</strong>
-                <span>📋</span>
-            </div>
-        </header>
-
-        <div class="grid-layout">
-            <div class="controls-card">
-                <div class="form-group">
-                    <label for="amountInput">Enter Amount (INR)</label>
-                    <div class="input-wrapper">
-                        <span class="currency-symbol">₹</span>
-                        <input type="number" id="amountInput" class="styled-input" value="3500" min="1" step="any" placeholder="0.00">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Quick Presets</label>
-                    <div class="presets">
-                        <button type="button" class="preset-btn" onclick="setAmount(100)">₹100</button>
-                        <button type="button" class="preset-btn" onclick="setAmount(500)">₹500</button>
-                        <button type="button" class="preset-btn" onclick="setAmount(1000)">₹1,000</button>
-                        <button type="button" class="preset-btn" onclick="setAmount(2000)">₹2,000</button>
-                        <button type="button" class="preset-btn active" onclick="setAmount(3500)">₹3,500</button>
-                        <button type="button" class="preset-btn" onclick="setAmount(5000)">₹5,000</button>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="noteInput">Payment Note / Reason</label>
-                    <input type="text" id="noteInput" class="styled-input note-input" value="Payment" placeholder="e.g. Order #1024 or Services">
-                </div>
-
-                <button class="btn-generate" onclick="updateQR()">
-                    <span>⚡ Generate Payment QR</span>
-                </button>
-            </div>
-
-            <div class="preview-wrapper">
-                <div class="preview-label">Payment Card Preview</div>
-
-                <div class="discord-embed-card">
-                    <div class="embed-title">Payment QR</div>
-                    <div class="embed-subtitle">
-                        Amount should be paid - <strong id="displayAmount">₹3,500.00</strong>
-                    </div>
-
-                    <div class="qr-card-container">
-                        <img id="qrImage" src="/api/qr?amount=3500&note=Payment" alt="UPI Payment QR Code">
-                    </div>
-
-                    <div class="embed-timestamp" id="embedTimestamp">Today at 3:55 PM</div>
-                </div>
-
-                <div class="actions-card">
-                    <a id="payLink" href="#" class="btn-action btn-upi-pay">
-                        <span>📱</span> Pay via UPI App (GPay / PhonePe / Paytm)
-                    </a>
-                    <button class="btn-action btn-secondary" onclick="downloadQR()">
-                        <span>📥</span> Download QR Image
-                    </button>
-                    <button class="btn-action btn-secondary" onclick="copyPaymentLink()">
-                        <span>🔗</span> Copy UPI Payment Link
-                    </button>
-                </div>
-            </div>
+    <div class="status-card">
+        <div class="logo-icon">AC</div>
+        <div>
+            <h1 class="title">ADAM CORPORATION</h1>
+            <p class="subtitle">Backend Engine is Running</p>
         </div>
+        <div class="status-pill">
+            <span class="pulse-dot"></span>
+            <span>SYSTEM ONLINE</span>
+        </div>
+        <div class="footer-text">Automated Cloud Core &bull; 24/7 Active</div>
     </div>
-
-    <div id="toast" class="toast">Copied!</div>
-
-    <script>
-        const UPI_ID = '{{ upi_id }}';
-        const PAYEE_NAME = '{{ payee_name }}';
-        let currentUpiUrl = '';
-
-        function formatCurrency(val) {
-            return new Intl.NumberFormat('en-IN', {
-                style: 'currency',
-                currency: 'INR',
-                minimumFractionDigits: 2
-            }).format(val);
-        }
-
-        function updateTimestamp() {
-            const now = new Date();
-            let hours = now.getHours();
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12;
-            hours = hours ? hours : 12;
-            document.getElementById('embedTimestamp').innerText = `Today at ${hours}:${minutes} ${ampm}`;
-        }
-
-        function setAmount(val) {
-            document.getElementById('amountInput').value = val;
-            document.querySelectorAll('.preset-btn').forEach(btn => {
-                const btnNum = parseFloat(btn.innerText.replace(/[^0-9.]/g, ''));
-                btn.classList.toggle('active', btnNum === val);
-            });
-            updateQR();
-        }
-
-        async function updateQR() {
-            const amtVal = parseFloat(document.getElementById('amountInput').value) || 0;
-            const noteVal = encodeURIComponent(document.getElementById('noteInput').value.trim() || 'Payment');
-
-            if (amtVal <= 0) {
-                showToast('Please enter an amount greater than 0');
-                return;
-            }
-
-            document.getElementById('displayAmount').innerText = formatCurrency(amtVal);
-
-            try {
-                const res = await fetch(`/api/payment-details?amount=${amtVal}&note=${noteVal}`);
-                const data = await res.json();
-                currentUpiUrl = data.upi_url;
-                document.getElementById('qrImage').src = `${data.qr_url}&t=${Date.now()}`;
-                document.getElementById('payLink').href = data.upi_url;
-            } catch (err) {
-                console.error(err);
-            }
-
-            updateTimestamp();
-        }
-
-        function downloadQR() {
-            const img = document.getElementById('qrImage');
-            const a = document.createElement('a');
-            a.href = img.src;
-            a.download = `UPI_Payment_QR_${document.getElementById('amountInput').value}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        function copyPaymentLink() {
-            if (currentUpiUrl) {
-                copyText(currentUpiUrl, 'UPI Link copied to clipboard!');
-            }
-        }
-
-        function copyText(text, msg) {
-            navigator.clipboard.writeText(text).then(() => {
-                showToast(msg);
-            });
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2500);
-        }
-
-        document.getElementById('amountInput').addEventListener('input', () => {
-            const val = parseFloat(document.getElementById('amountInput').value) || 0;
-            document.querySelectorAll('.preset-btn').forEach(btn => {
-                const btnNum = parseFloat(btn.innerText.replace(/[^0-9.]/g, ''));
-                btn.classList.toggle('active', btnNum === val);
-            });
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            updateQR();
-        });
-    </script>
 </body>
 </html>
