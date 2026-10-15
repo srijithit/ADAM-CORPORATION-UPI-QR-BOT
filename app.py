@@ -23,9 +23,22 @@ def index():
 
 @app.api_route("/health", methods=["GET", "HEAD", "POST"])
 def health_check():
+    bot_ready = False
+    bot_name = None
+    try:
+        import bot
+        bot_ready = bot.bot.is_ready()
+        if bot.bot.user:
+            bot_name = str(bot.bot.user)
+    except Exception:
+        pass
+
     return JSONResponse({
         "status": "ok",
         "service": "ADAM CORPORATION Backend Engine",
+        "discord_bot_connected": bot_ready,
+        "discord_bot_user": bot_name,
+        "token_configured": bool(os.getenv("DISCORD_BOT_TOKEN") and os.getenv("DISCORD_BOT_TOKEN") != "YOUR_DISCORD_BOT_TOKEN_HERE"),
         "state": "running"
     })
 

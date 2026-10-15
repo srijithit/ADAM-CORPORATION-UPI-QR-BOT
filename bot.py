@@ -71,22 +71,32 @@ async def handle_qr_command(
     amount: float,
     note: str = 'Payment'
 ):
-    if not is_authorized(interaction.user, interaction.guild):
-        await interaction.response.send_message(
-            '🚫 **Access Denied**: You do not have permission to generate payment QR codes in this server.',
+    # 1. Immediately defer response so Discord never times out (<3s deadline)
+    await interaction.response.defer()
+
+    try:
+        if not is_authorized(interaction.user, interaction.guild):
+            await interaction.followup.send(
+                '🚫 **Access Denied**: You do not have permission to generate payment QR codes in this server.',
+                ephemeral=True
+            )
+            return
+
+        if amount <= 0:
+            await interaction.followup.send(
+                '❌ Amount must be greater than zero.',
+                ephemeral=True
+            )
+            return
+
+        embed, file = create_payment_response(amount, note)
+        await interaction.followup.send(embed=embed, file=file)
+    except Exception as e:
+        print(f"Error handling /qr: {e}", flush=True)
+        await interaction.followup.send(
+            f"❌ An error occurred: {e}",
             ephemeral=True
         )
-        return
-
-    if amount <= 0:
-        await interaction.response.send_message(
-            '❌ Amount must be greater than zero.',
-            ephemeral=True
-        )
-        return
-
-    embed, file = create_payment_response(amount, note)
-    await interaction.response.send_message(embed=embed, file=file)
 
 @bot.event
 async def on_ready():

@@ -10,10 +10,14 @@ from app import app
 import bot
 
 def run_discord_bot():
-    try:
-        bot.main()
-    except Exception as e:
-        print(f"Discord bot exception: {e}", flush=True)
+    import time
+    while True:
+        try:
+            print("Starting Discord Bot...", flush=True)
+            bot.main()
+        except BaseException as e:
+            print(f"Discord bot exited or crashed: {type(e).__name__}: {e}", flush=True)
+            time.sleep(5)
 
 def main():
     # 1. Start Discord Bot in a background daemon thread
